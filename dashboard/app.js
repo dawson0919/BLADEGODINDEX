@@ -274,111 +274,6 @@ async function renderSpxChart() {
   }
 }
 
-// ── BLADE INDEX HISTORY CHART ──────────────────────────────────────────────
-
-async function renderHistoryChart() {
-  const loadingEl = document.getElementById('historyLoading');
-  const canvas    = document.getElementById('historyChart');
-
-  try {
-    const resp = await fetch('/api/blade-history?days=252');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const { history } = await resp.json();
-
-    if (!history || history.length === 0) throw new Error('無歷史資料');
-
-    const labels = history.map(d => {
-      const [, m, day] = d.date.split('-');
-      return `${+m}/${+day}`;
-    });
-    const data = history.map(d => d.score);
-
-    loadingEl.classList.add('hidden');
-    setTimeout(() => loadingEl.style.display = 'none', 400);
-
-    const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 280);
-    gradient.addColorStop(0,   'rgba(245,197,24,0.35)');
-    gradient.addColorStop(0.6, 'rgba(229,57,57,0.08)');
-    gradient.addColorStop(1,   'rgba(229,57,57,0)');
-
-    const zonePlugin = {
-      id: 'zoneBackground',
-      beforeDraw(chart) {
-        const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
-        const zones = [
-          { min: 80, max: 100, color: 'rgba(59,130,246,0.06)' },
-          { min: 60, max: 80,  color: 'rgba(34,197,94,0.05)'  },
-          { min: 40, max: 60,  color: 'rgba(234,179,8,0.04)'  },
-          { min: 20, max: 40,  color: 'rgba(249,115,22,0.05)' },
-          { min: 0,  max: 20,  color: 'rgba(239,68,68,0.07)'  },
-        ];
-        zones.forEach(z => {
-          c.fillStyle = z.color;
-          c.fillRect(left, y.getPixelForValue(z.max), right - left,
-                     y.getPixelForValue(z.min) - y.getPixelForValue(z.max));
-        });
-      },
-    };
-
-    new Chart(canvas, {
-      type: 'line',
-      plugins: [zonePlugin],
-      data: {
-        labels,
-        datasets: [{
-          label: '刀神指標',
-          data,
-          borderColor: '#f5c518',
-          borderWidth: 2.5,
-          backgroundColor: gradient,
-          fill: true,
-          tension: 0.4,
-          pointRadius: (ctx) => ctx.dataIndex === data.length - 1 ? 7 : 0,
-          pointBackgroundColor: '#f5c518',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e2536',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            titleColor: '#f5c518',
-            bodyColor: '#e8eaf0',
-            cornerRadius: 10,
-            callbacks: {
-              title:  (items) => `日期：${items[0].label}`,
-              label:  (item)  => {
-                const l = scoreLabel(item.raw);
-                return ` 刀神分數：${item.raw}  ${l.zh} / ${l.en}`;
-              },
-            },
-          },
-        },
-        scales: {
-          x: {
-            ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 12 },
-            grid:  { color: 'rgba(255,255,255,0.04)' },
-          },
-          y: {
-            min: 0, max: 100,
-            ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 }, stepSize: 20 },
-            grid:  { color: 'rgba(255,255,255,0.06)' },
-          },
-        },
-        animation: { duration: 1200, easing: 'easeOutQuart' },
-      },
-    });
-  } catch (err) {
-    if (loadingEl) loadingEl.textContent = `⚠️ 歷史資料載入失敗：${err.message}`;
-    console.error('History chart error:', err);
-  }
-}
 
 // ── GAUGE ANIMATION ────────────────────────────────────────────────────────
 
@@ -463,7 +358,6 @@ async function init() {
 
   // ── Charts (independent, run in parallel) ──
   renderSpxChart();
-  renderHistoryChart();
 }
 
 document.addEventListener('DOMContentLoaded', init);
