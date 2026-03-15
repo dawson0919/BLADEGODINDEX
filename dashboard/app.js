@@ -122,22 +122,27 @@ function drawGauge(canvas, score) {
   const nLen = R - 10;
   const nx = cx + nLen * Math.cos(needleAngle);
   const ny = cy + nLen * Math.sin(needleAngle);
+  // Blade-style needle with gold-to-red gradient
+  const needleGrad = ctx.createLinearGradient(cx, cy, nx, ny);
+  needleGrad.addColorStop(0, '#f5c518');
+  needleGrad.addColorStop(1, '#e53939');
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(nx, ny);
-  ctx.strokeStyle = '#fff';
+  ctx.strokeStyle = needleGrad;
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
-  ctx.shadowColor = '#fff';
-  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#f5c518';
+  ctx.shadowBlur = 12;
   ctx.stroke();
   ctx.shadowBlur = 0;
 
+  // Center hub with gold glow
   ctx.beginPath();
   ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
-  ctx.shadowColor = scoreColor(score);
-  ctx.shadowBlur = 16;
+  ctx.fillStyle = '#f5c518';
+  ctx.shadowColor = '#f5c518';
+  ctx.shadowBlur = 20;
   ctx.fill();
   ctx.shadowBlur = 0;
 
@@ -229,16 +234,16 @@ async function renderSpxChart() {
     width: w, height: h,
     layout: { background: { color: '#0c1a2e' }, textColor: '#5a7a9e' },
     grid: {
-      vertLines: { color: 'rgba(74,158,255,0.04)' },
-      horzLines: { color: 'rgba(74,158,255,0.04)' },
+      vertLines: { color: 'rgba(245,197,24,0.03)' },
+      horzLines: { color: 'rgba(245,197,24,0.03)' },
     },
     crosshair: {
       mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: { color: 'rgba(74,158,255,0.3)', labelBackgroundColor: '#101e36' },
-      horzLine: { color: 'rgba(74,158,255,0.3)', labelBackgroundColor: '#101e36' },
+      vertLine: { color: 'rgba(245,197,24,0.25)', labelBackgroundColor: '#101e36' },
+      horzLine: { color: 'rgba(245,197,24,0.25)', labelBackgroundColor: '#101e36' },
     },
-    rightPriceScale: { borderColor: 'rgba(74,158,255,0.10)' },
-    timeScale: { borderColor: 'rgba(74,158,255,0.10)', timeVisible: true },
+    rightPriceScale: { borderColor: 'rgba(245,197,24,0.08)' },
+    timeScale: { borderColor: 'rgba(245,197,24,0.08)', timeVisible: true },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
     handleScale:  { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
   });

@@ -1,18 +1,22 @@
 /* ===========================
    BLADE GOD INDEX — STYLE.CSS
-   Color palette: dark navy + steel blue + cyan glow
+   Brand: 刀鋒金 #f5c518 + 赤紅 #e53939 + 鋼藍 #4a9eff
    =========================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
+  /* ── Brand signature colors ── */
+  --blade-gold:  #f5c518;
+  --blade-red:   #e53939;
+  --blade-steel: #4a9eff;
+
   --bg:        #060d1a;
   --bg2:       #0b1628;
   --bg3:       #101e36;
   --card:      #0c1a2e;
-  --border:    rgba(74,158,255,0.10);
-  --accent:    #4a9eff;
-  --gold:      #6bb5ff;
+  --border:    rgba(245,197,24,0.08);
+  --accent:    var(--blade-gold);
   --cyan:      #4ac4ff;
   --green:     #22d98b;
   --text:      #d4e3f5;
@@ -21,10 +25,9 @@
   --orange:    #f97316;
   --yellow:    #eab308;
   --lime:      #84cc16;
-  --blue:      #4a9eff;
+  --blue:      #3b82f6;
   --radius:    16px;
   --shadow:    0 8px 40px rgba(0,0,0,0.6);
-  --glow:      rgba(74,158,255,0.15);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +40,26 @@ body {
   font-family: 'Outfit', sans-serif;
   min-height: 100vh;
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(74,158,255,0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(74,196,255,0.04) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,197,24,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(74,158,255,0.04) 0%, transparent 60%);
+}
+
+/* ── BLADE SLASH — signature diagonal accent line ── */
+.blade-slash {
+  position: relative;
+  overflow: hidden;
+}
+.blade-slash::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -10%;
+  width: 3px;
+  height: 200%;
+  background: linear-gradient(180deg, transparent, var(--blade-gold), var(--blade-red), transparent);
+  transform: rotate(25deg);
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 /* Hero section — layout + AI-generated background */
@@ -68,37 +89,53 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 22px 40px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(6,13,26,0.88);
+  border-bottom: 1px solid rgba(245,197,24,0.12);
+  background: rgba(6,13,26,0.92);
   backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 100;
 }
+/* Subtle gold accent line at bottom of header */
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, var(--blade-gold) 30%, var(--blade-red) 70%, transparent 95%);
+  opacity: 0.4;
+}
 
 .header-left { display: flex; align-items: center; gap: 16px; }
 
 .logo-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(74,158,255,0.6));
+  filter: drop-shadow(0 0 10px rgba(245,197,24,0.5)) drop-shadow(0 0 20px rgba(229,57,57,0.3));
   border-radius: 8px;
+  animation: logo-glow 3s ease-in-out infinite alternate;
+}
+@keyframes logo-glow {
+  0%   { filter: drop-shadow(0 0 8px rgba(245,197,24,0.4)) drop-shadow(0 0 16px rgba(229,57,57,0.2)); }
+  100% { filter: drop-shadow(0 0 14px rgba(245,197,24,0.7)) drop-shadow(0 0 28px rgba(229,57,57,0.4)); }
 }
 
 .logo-title {
   font-size: 1.6rem;
   font-weight: 900;
-  background: linear-gradient(90deg, #4a9eff, #8fd4ff, #4a9eff);
-  background-size: 200%;
+  background: linear-gradient(90deg, var(--blade-gold), #ffdf6b, var(--blade-red), var(--blade-gold));
+  background-size: 300%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shimmer 4s linear infinite;
+  animation: shimmer 5s linear infinite;
   letter-spacing: -0.5px;
 }
 
-@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+@keyframes shimmer { 0%{background-position:0%} 100%{background-position:300%} }
 
 .logo-sub { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.5px; font-weight: 400; }
 
@@ -106,9 +143,9 @@ body {
 
 .live-dot {
   width: 9px; height: 9px;
-  background: var(--cyan);
+  background: var(--blade-gold);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--cyan);
+  box-shadow: 0 0 6px var(--blade-gold), 0 0 12px rgba(245,197,24,0.3);
   animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
@@ -170,6 +207,7 @@ body {
   overflow: hidden;
   width: 100%;
   max-width: 600px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
 }
 
 .zone {
@@ -209,9 +247,12 @@ body {
   border-radius: 12px;
   border-left: 4px solid transparent;
   backdrop-filter: blur(8px);
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.zone-tip:hover { transform: translateX(4px); }
+.zone-tip:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
 
 .tip-range {
   font-weight: 700;
@@ -267,13 +308,27 @@ body {
 .commentary-card {
   width: 100%;
   max-width: 620px;
-  background: rgba(74,158,255,0.03);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
+  background: rgba(245,197,24,0.02);
+  border: 1px solid rgba(245,197,24,0.08);
+  border-left: 4px solid var(--blade-gold);
   border-radius: var(--radius);
   padding: 20px 24px;
   margin-top: 24px;
   transition: border-left-color 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle blade slash on commentary card */
+.commentary-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: 5%;
+  width: 2px;
+  height: 200%;
+  background: linear-gradient(180deg, transparent, rgba(245,197,24,0.15), rgba(229,57,57,0.1), transparent);
+  transform: rotate(20deg);
+  pointer-events: none;
 }
 
 .commentary-header {
@@ -290,7 +345,7 @@ body {
 .commentary-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--text);
+  color: var(--blade-gold);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -320,6 +375,13 @@ body {
   gap: 8px;
   letter-spacing: 0.5px;
 }
+/* Gold accent underline on section title */
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(245,197,24,0.2), transparent);
+}
 
 /* ── CARDS GRID ── */
 .cards-grid {
@@ -330,7 +392,7 @@ body {
 
 .indicator-card {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(245,197,24,0.06);
   border-radius: var(--radius);
   padding: 22px 24px;
   position: relative;
@@ -349,10 +411,23 @@ body {
   transition: background 1s;
 }
 
+/* Blade slash decorative element on cards */
+.indicator-card::after {
+  content: '';
+  position: absolute;
+  top: -80%;
+  right: 8%;
+  width: 1px;
+  height: 260%;
+  background: linear-gradient(180deg, transparent, rgba(245,197,24,0.06), transparent);
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
 .indicator-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(74,158,255,0.08);
-  border-color: rgba(74,158,255,0.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(245,197,24,0.06);
+  border-color: rgba(245,197,24,0.15);
 }
 
 .card-header {
@@ -367,10 +442,10 @@ body {
   font-size: 0.7rem;
   color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
-  background: rgba(74,158,255,0.06);
+  background: rgba(245,197,24,0.05);
   padding: 3px 8px;
   border-radius: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(245,197,24,0.10);
 }
 
 .card-name {
@@ -408,7 +483,7 @@ body {
 /* mini progress bar */
 .card-bar-track {
   height: 5px;
-  background: rgba(74,158,255,0.08);
+  background: rgba(245,197,24,0.06);
   border-radius: 99px;
   margin-top: 14px;
   overflow: hidden;
@@ -434,7 +509,7 @@ body {
 /* ── CHART BOX ── */
 .chart-box {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(245,197,24,0.06);
   border-radius: var(--radius);
   padding: 0;
   height: 440px;
@@ -469,6 +544,32 @@ body {
   color: var(--muted);
   font-size: 0.75rem;
   line-height: 1.7;
+  position: relative;
+}
+/* Gold accent line at top of footer */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(245,197,24,0.2) 50%, transparent 90%);
+}
+
+/* ── BRAND WATERMARK ── */
+body::after {
+  content: '刀';
+  position: fixed;
+  bottom: -40px;
+  right: -20px;
+  font-size: 20rem;
+  font-weight: 900;
+  color: rgba(245,197,24,0.015);
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  line-height: 1;
 }
 
 /* ── RESPONSIVE ── */
@@ -480,4 +581,5 @@ body {
   .gauge-score { font-size: 3rem; }
   .section { padding: 0 16px 40px; }
   .cards-grid { grid-template-columns: 1fr; }
+  body::after { font-size: 12rem; }
 }
