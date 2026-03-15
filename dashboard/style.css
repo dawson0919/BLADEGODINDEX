@@ -386,20 +386,13 @@ body {
 /* ── WORLD MAP ── */
 .world-map-container {
   position: relative;
-  background: var(--card);
-  border: 1px solid rgba(245,197,24,0.06);
+  background: var(--card) url('assets/world-map.png') center/cover no-repeat;
+  border: 1px solid rgba(245,197,24,0.1);
   border-radius: var(--radius);
   aspect-ratio: 2 / 1;
   max-height: 520px;
   overflow: hidden;
-}
-
-.world-map-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
 }
 
 .world-markers {
