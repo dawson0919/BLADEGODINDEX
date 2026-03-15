@@ -306,59 +306,151 @@ def compute() -> dict:
     }
 
 
-# ── Fast history (simplified 3-factor for speed) ─────────────────────────────
+# ── Percentile rank helper ────────────────────────────────────────────────────
+
+def _pct_rank(series: pd.Series, lookback: int = 252) -> pd.Series:
+    """Rolling percentile rank: 0 = worst in window, 100 = best in window."""
+    def _rank_at(window):
+        if len(window) < 20:
+            return 50.0
+        cur = window.iloc[-1]
+        past = window.iloc[:-1]
+        return float(np.sum(past <= cur) / len(past)) * 100.0
+    return series.rolling(lookback, min_periods=20).apply(_rank_at, raw=False)
+
+
+def _sigmoid_stretch(x: float, midpoint: float = 50.0, steepness: float = 0.08) -> float:
+    """Sigmoid that stretches scores away from midpoint toward 0/100 extremes."""
+    z = (x - midpoint) * steepness
+    return 100.0 / (1.0 + np.exp(-z))
+
+
+# ── Enhanced history (6-factor, percentile-ranked) ────────────────────────────
 
 def compute_history(days: int = 252) -> list[dict]:
     """
     Daily Blade Index scores for the past N trading days.
-    Uses simplified 3-factor proxy (40% momentum, 40% VIX, 20% junk spread)
-    to avoid 9 separate downloads per day.
+    Uses 6 factors with percentile-rank normalization so that
+    extreme market events (crashes, euphoria) map to 0-20 / 80-100.
+    Downloads extra lookback for a stable 252-day ranking window.
     """
-    spy = _dl_single("SPY", days + 200)
-    vix = _dl_single("^VIX", days + 100)
-    hj = _dl_multi(["HYG", "LQD"], days + 60)
+    lookback = days + 400  # extra data for rolling percentile window
 
-    # Align on common trading dates
-    base = spy.index.intersection(vix.index)
-    has_junk = "HYG" in hj.columns and "LQD" in hj.columns
+    # Download all needed data in bulk
+    spy = _dl_single("SPY", lookback)
+    vix = _dl_single("^VIX", lookback)
+    multi = _dl_multi(["HYG", "LQD", "TLT", "BTC-USD", "RSP"], lookback)
+
+    # ── Build raw signal Series ──────────────────────────────────────────
+
+    # 1. Momentum: SPY % above/below 125-day MA
+    spy_ma125 = spy.rolling(125, min_periods=80).mean()
+    momentum_raw = ((spy - spy_ma125) / spy_ma125 * 100).dropna()
+
+    # 2. VIX level (inverted: high VIX = fear)
+    vix_raw = vix.dropna()
+
+    # 3. Junk bond demand: HYG - LQD 30-day return spread
+    has_junk = "HYG" in multi.columns and "LQD" in multi.columns
     if has_junk:
-        base = base.intersection(hj.index)
-    base = base.sort_values()[-days:]
+        hyg_r30 = multi["HYG"].pct_change(30)
+        lqd_r30 = multi["LQD"].pct_change(30)
+        junk_raw = ((hyg_r30 - lqd_r30) * 100).dropna()
+    else:
+        junk_raw = pd.Series(dtype=float)
 
-    spy = spy.reindex(base)
-    vix = vix.reindex(base)
+    # 4. Safe haven: SPY - TLT 20-day return spread
+    has_tlt = "TLT" in multi.columns
+    if has_tlt:
+        spy_r20 = spy.pct_change(20)
+        tlt_r20 = multi["TLT"].pct_change(20)
+        safe_raw = ((spy_r20 - tlt_r20) * 100).dropna()
+    else:
+        safe_raw = pd.Series(dtype=float)
+
+    # 5. Leverage proxy: RSP/SPY ratio deviation from 60-day mean
+    has_rsp = "RSP" in multi.columns
+    if has_rsp:
+        ratio = (multi["RSP"] / spy).dropna()
+        ratio_ma60 = ratio.rolling(60, min_periods=30).mean()
+        leverage_raw = ((ratio - ratio_ma60) / ratio_ma60 * 100).dropna()
+    else:
+        leverage_raw = pd.Series(dtype=float)
+
+    # 6. Crypto sentiment: BTC 30-day return z-score
+    has_btc = "BTC-USD" in multi.columns
+    if has_btc:
+        btc = multi["BTC-USD"].dropna()
+        btc_r30 = btc.pct_change(30).dropna()
+        btc_mu = btc_r30.rolling(252, min_periods=60).mean()
+        btc_sigma = btc_r30.rolling(252, min_periods=60).std()
+        crypto_raw = ((btc_r30 - btc_mu) / btc_sigma.replace(0, np.nan)).dropna()
+    else:
+        crypto_raw = pd.Series(dtype=float)
+
+    # ── Percentile-rank each signal over rolling 252-day window ──────────
+
+    pct_window = 252
+
+    momentum_pct = _pct_rank(momentum_raw, pct_window)
+    # VIX inverted: high VIX → low rank → fear
+    vix_pct = 100.0 - _pct_rank(vix_raw, pct_window)
+
+    junk_pct = _pct_rank(junk_raw, pct_window) if len(junk_raw) > 30 else None
+    safe_pct = _pct_rank(safe_raw, pct_window) if len(safe_raw) > 30 else None
+    leverage_pct = _pct_rank(leverage_raw, pct_window) if len(leverage_raw) > 30 else None
+    crypto_pct = _pct_rank(crypto_raw, pct_window) if len(crypto_raw) > 30 else None
+
+    # ── Composite: weighted average of available percentile scores ───────
+    # Weights: momentum 25%, VIX 25%, junk 15%, safe haven 15%, leverage 10%, crypto 10%
+
+    base_dates = momentum_pct.dropna().index.intersection(vix_pct.dropna().index)
+    base_dates = base_dates.sort_values()[-days:]
 
     history = []
-    for dt in base:
+    for dt in base_dates:
         try:
-            # Momentum score
-            spy_window = spy[:dt].tail(150)
-            if len(spy_window) >= 125:
-                ma125 = float(spy_window.rolling(125).mean().iloc[-1])
+            scores = []
+            weights = []
+
+            m = float(momentum_pct.loc[dt]) if dt in momentum_pct.index else np.nan
+            v = float(vix_pct.loc[dt]) if dt in vix_pct.index else np.nan
+
+            if not np.isnan(m):
+                scores.append(m); weights.append(0.25)
+            if not np.isnan(v):
+                scores.append(v); weights.append(0.25)
+
+            if junk_pct is not None and dt in junk_pct.index:
+                j = float(junk_pct.loc[dt])
+                if not np.isnan(j):
+                    scores.append(j); weights.append(0.15)
+
+            if safe_pct is not None and dt in safe_pct.index:
+                s = float(safe_pct.loc[dt])
+                if not np.isnan(s):
+                    scores.append(s); weights.append(0.15)
+
+            if leverage_pct is not None and dt in leverage_pct.index:
+                lv = float(leverage_pct.loc[dt])
+                if not np.isnan(lv):
+                    scores.append(lv); weights.append(0.10)
+
+            if crypto_pct is not None and dt in crypto_pct.index:
+                cr = float(crypto_pct.loc[dt])
+                if not np.isnan(cr):
+                    scores.append(cr); weights.append(0.10)
+
+            if not scores:
+                daily = 50.0
             else:
-                ma125 = float(spy_window.mean())
-            cur = float(spy_window.iloc[-1])
-            m_pct = (cur - ma125) / ma125 * 100
-            m_score = clamp(norm(m_pct, -15, 15))
+                # Normalize weights to sum to 1
+                w_sum = sum(weights)
+                daily = sum(s * w / w_sum for s, w in zip(scores, weights))
+                # Apply sigmoid stretch to amplify extremes
+                daily = _sigmoid_stretch(daily, midpoint=50.0, steepness=0.08)
+                daily = round(clamp(daily), 1)
 
-            # VIX score (inverted)
-            v = float(vix.loc[dt]) if dt in vix.index else 20.0
-            v_score = clamp(norm(v, 40, 10))
-
-            # Junk bond score
-            if has_junk:
-                hj_window = hj.loc[:dt].tail(35)
-                if len(hj_window) >= 31:
-                    r30_h = float(hj_window["HYG"].pct_change(30).iloc[-1]) * 100
-                    r30_l = float(hj_window["LQD"].pct_change(30).iloc[-1]) * 100
-                    diff = r30_h - r30_l
-                    j_score = clamp(norm(diff, -5, 5))
-                else:
-                    j_score = 50.0
-            else:
-                j_score = 50.0
-
-            daily = round(m_score * 0.40 + v_score * 0.40 + j_score * 0.20, 1)
         except Exception:
             daily = 50.0
 
