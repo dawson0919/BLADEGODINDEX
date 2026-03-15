@@ -3,7 +3,6 @@
 Serves the dashboard and provides SPX K-line data via yfinance.
 """
 import os
-import json
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, send_from_directory, request
@@ -135,5 +134,5 @@ def static_files(path):
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print(f"🗡️  刀神指標 running at http://localhost:{PORT}")
+    print(f"Blade God Index running at http://localhost:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False)
