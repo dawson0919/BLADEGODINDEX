@@ -107,6 +107,64 @@
   </div>
 </section>
 
+<!-- WORLD MARKET OVERVIEW -->
+<section class="section">
+  <h2 class="section-title">🌍 全球市場總覽 <span style="font-size:0.75rem;color:var(--muted);font-weight:400">World Market Overview</span></h2>
+  <div class="world-map-container blade-slash" id="worldMapContainer">
+    <!-- Simplified SVG world map outline -->
+    <svg class="world-map-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="landGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:rgba(90,122,158,0.06)"/>
+          <stop offset="100%" style="stop-color:rgba(245,197,24,0.02)"/>
+        </linearGradient>
+      </defs>
+      <!-- North America -->
+      <path d="M120,80 L180,60 L220,70 L240,90 L260,80 L270,100 L260,120 L280,140 L270,160 L260,180 L240,200 L220,210 L200,200 L180,210 L160,200 L140,210 L130,190 L120,170 L110,150 L100,130 L105,110 L110,95 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Central America -->
+      <path d="M200,200 L220,210 L230,230 L240,250 L250,260 L260,270 L250,280 L240,275 L230,260 L220,250 L210,230 L200,220 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- South America -->
+      <path d="M250,280 L280,270 L310,280 L330,300 L340,320 L345,340 L340,360 L330,380 L310,390 L290,385 L270,370 L260,350 L250,330 L245,310 L248,290 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Europe -->
+      <path d="M440,60 L480,50 L520,55 L540,70 L550,85 L540,100 L530,110 L520,120 L510,130 L500,135 L490,140 L480,130 L470,120 L460,115 L450,110 L445,95 L440,80 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Africa -->
+      <path d="M450,160 L480,150 L510,155 L540,160 L560,180 L570,210 L575,240 L570,270 L560,300 L540,320 L520,330 L500,325 L480,310 L470,290 L460,260 L455,230 L450,200 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Asia (mainland) -->
+      <path d="M540,50 L600,40 L660,45 L720,50 L770,60 L800,80 L820,100 L830,130 L820,160 L800,180 L780,190 L760,200 L740,210 L720,200 L700,190 L680,180 L660,170 L640,165 L620,170 L600,160 L580,140 L560,120 L550,100 L545,70 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- India -->
+      <path d="M640,170 L660,175 L680,190 L690,210 L695,240 L680,260 L660,250 L645,230 L635,200 L635,185 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Southeast Asia / Indonesia -->
+      <path d="M720,210 L750,200 L780,210 L810,220 L830,215 L850,220 L840,235 L820,240 L790,235 L760,230 L740,225 L725,220 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Japan -->
+      <path d="M830,100 L840,80 L850,90 L855,110 L850,130 L840,140 L835,125 L830,110 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Australia -->
+      <path d="M790,310 L830,300 L870,305 L900,320 L910,340 L900,365 L880,380 L850,385 L820,375 L800,355 L790,335 Z"
+            fill="url(#landGrad)" stroke="rgba(90,122,158,0.15)" stroke-width="0.8"/>
+      <!-- Grid lines (longitude) -->
+      <line x1="500" y1="0" x2="500" y2="500" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <line x1="250" y1="0" x2="250" y2="500" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <line x1="750" y1="0" x2="750" y2="500" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <!-- Grid lines (latitude) -->
+      <line x1="0" y1="250" x2="1000" y2="250" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <line x1="0" y1="125" x2="1000" y2="125" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <line x1="0" y1="375" x2="1000" y2="375" stroke="rgba(90,122,158,0.04)" stroke-width="0.5" stroke-dasharray="4,8"/>
+    </svg>
+    <div class="world-markers" id="worldMarkers">
+      <!-- Populated by JS -->
+    </div>
+    <div id="worldMapLoading" class="chart-loading">⏳ 載入全球市場資料中… Loading world markets...</div>
+  </div>
+</section>
+
 <!-- SPX CANDLESTICK CHART -->
 <section class="section">
   <h2 class="section-title" id="spxChartTitle">📊 SPX 日K 歷史走勢 <span style="font-size:0.75rem;color:var(--muted);font-weight:400">S&amp;P 500 Daily Candlestick</span></h2>

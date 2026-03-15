@@ -218,6 +218,68 @@ function renderCards(indicators) {
   });
 }
 
+// ── WORLD MARKET MAP ──────────────────────────────────────────────────────
+
+// Card direction overrides to prevent overlap in clustered regions
+const CARD_DIRS = {
+  dji:   'card-above',   // US cluster
+  ixic:  'card-left',    // US cluster
+  gdaxi: 'card-right',   // Europe cluster
+  fchi:  'card-left',    // Europe cluster
+  kospi: 'card-above',   // Asia cluster
+  ssec:  'card-left',    // Asia cluster
+  twii:  'card-right',   // Asia cluster
+  hsi:   'card-left',    // Asia cluster
+};
+
+async function renderWorldMap() {
+  const container = document.getElementById('worldMarkers');
+  const loadingEl = document.getElementById('worldMapLoading');
+
+  try {
+    const resp = await fetch('/api/world-markets');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const { markets } = await resp.json();
+
+    if (!markets || markets.length === 0) throw new Error('No data');
+
+    container.innerHTML = '';
+
+    markets.forEach(m => {
+      const isUp = m.change_pct !== null && m.change_pct >= 0;
+      const isNa = m.change_pct === null;
+      const dotClass = isNa ? 'na' : (isUp ? 'up' : 'down');
+      const chgClass = isNa ? 'na' : (isUp ? 'up' : 'down');
+      const arrow = isNa ? '' : (isUp ? '▲' : '▼');
+      const chgText = isNa ? 'N/A' : `${arrow} ${Math.abs(m.change_pct).toFixed(2)}%`;
+      const cardDir = CARD_DIRS[m.id] || '';
+
+      const marker = document.createElement('div');
+      marker.className = 'world-marker';
+      marker.style.left = m.x + '%';
+      marker.style.top = m.y + '%';
+      marker.tabIndex = 0; // for mobile tap focus
+
+      marker.innerHTML = `
+        <div class="marker-dot ${dotClass}"></div>
+        <div class="marker-card ${cardDir}">
+          <div class="marker-name">${m.name}</div>
+          <div class="marker-price">${m.price}</div>
+          <div class="marker-change ${chgClass}">${chgText}</div>
+        </div>
+      `;
+      container.appendChild(marker);
+    });
+
+    loadingEl.classList.add('hidden');
+    setTimeout(() => loadingEl.style.display = 'none', 400);
+
+  } catch (err) {
+    if (loadingEl) loadingEl.textContent = `⚠️ 全球市場載入失敗 ${err.message}`;
+    console.error('World map error:', err);
+  }
+}
+
 // ── SPX CANDLESTICK CHART ──────────────────────────────────────────────────
 
 async function renderSpxChart() {
@@ -361,7 +423,8 @@ async function init() {
     renderCards([]);
   }
 
-  // ── Charts (independent, run in parallel) ──
+  // ── Charts & map (independent, run in parallel) ──
+  renderWorldMap();
   renderSpxChart();
 }
 

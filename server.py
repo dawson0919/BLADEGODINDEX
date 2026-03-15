@@ -118,6 +118,82 @@ def blade_history():
 
 
 
+# ── API: World Markets ──────────────────────────────────────────────────────
+
+WORLD_INDICES = [
+    ("spx",   "S&P 500",    "^GSPC",    22, 38),
+    ("dji",   "Dow Jones",  "^DJI",     18, 34),
+    ("ixic",  "NASDAQ",     "^IXIC",    15, 42),
+    ("ftse",  "FTSE 100",   "^FTSE",    46, 24),
+    ("gdaxi", "DAX",        "^GDAXI",   51, 23),
+    ("fchi",  "CAC 40",     "^FCHI",    48, 28),
+    ("n225",  "Nikkei 225", "^N225",    85, 33),
+    ("hsi",   "Hang Seng",  "^HSI",     78, 44),
+    ("ssec",  "Shanghai",   "000001.SS",75, 37),
+    ("kospi", "KOSPI",      "^KS11",    82, 30),
+    ("twii",  "TAIEX",      "^TWII",    80, 41),
+    ("bsesn", "Sensex",     "^BSESN",   67, 44),
+    ("axjo",  "ASX 200",    "^AXJO",    87, 70),
+    ("bvsp",  "Bovespa",    "^BVSP",    30, 65),
+]
+
+_world_cache: dict = {"data": None, "ts": 0}
+WORLD_TTL = 300  # 5 min
+
+
+def _fetch_world_markets() -> list[dict]:
+    symbols = [w[2] for w in WORLD_INDICES]
+    raw = yf.download(symbols, period="5d", auto_adjust=True,
+                      progress=False, threads=True)
+    results = []
+    for wid, name, symbol, x, y in WORLD_INDICES:
+        try:
+            if isinstance(raw.columns, pd.MultiIndex):
+                close = raw["Close"][symbol].dropna()
+            else:
+                close = raw["Close"].dropna()
+            if len(close) < 2:
+                raise ValueError("insufficient data")
+            cur = float(close.iloc[-1])
+            prev = float(close.iloc[-2])
+            chg = round((cur - prev) / prev * 100, 2)
+            # Format price: no decimals for large numbers
+            if cur > 1000:
+                price_str = f"{cur:,.0f}"
+            else:
+                price_str = f"{cur:,.2f}"
+            results.append({
+                "id": wid, "name": name, "symbol": symbol,
+                "price": price_str, "price_raw": round(cur, 2),
+                "change_pct": chg,
+                "x": x, "y": y,
+            })
+        except Exception:
+            results.append({
+                "id": wid, "name": name, "symbol": symbol,
+                "price": "N/A", "price_raw": None,
+                "change_pct": None,
+                "x": x, "y": y,
+            })
+    return results
+
+
+@app.route("/api/world-markets")
+def world_markets():
+    now = datetime.now(timezone.utc).timestamp()
+    if _world_cache["data"] and (now - _world_cache["ts"]) < WORLD_TTL:
+        return jsonify({"markets": _world_cache["data"],
+                        "updatedAt": datetime.now(timezone.utc).isoformat()})
+    try:
+        data = _fetch_world_markets()
+        _world_cache["data"] = data
+        _world_cache["ts"] = now
+        return jsonify({"markets": data,
+                        "updatedAt": datetime.now(timezone.utc).isoformat()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/")
 def index():
     return send_from_directory("dashboard", "index.html")
