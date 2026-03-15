@@ -1,0 +1,16 @@
+{
+  "name": "blade-god-index",
+  "version": "1.0.0",
+  "description": "刀神指標 — 美股市場情緒儀表板",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
