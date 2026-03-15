@@ -222,14 +222,19 @@ function renderCards(indicators) {
 
 // Card direction overrides to prevent overlap in clustered regions
 const CARD_DIRS = {
-  dji:   'card-above',   // US cluster
-  ixic:  'card-left',    // US cluster
-  gdaxi: 'card-right',   // Europe cluster
-  fchi:  'card-left',    // Europe cluster
-  kospi: 'card-above',   // Asia cluster
-  ssec:  'card-left',    // Asia cluster
-  twii:  'card-right',   // Asia cluster
-  hsi:   'card-left',    // Asia cluster
+  spx:   '',             // US — default below
+  dji:   'card-above',   // US — above to avoid S&P
+  ixic:  'card-left',    // US — left edge
+  ftse:  'card-left',    // Europe — left
+  gdaxi: 'card-right',   // Europe — right
+  fchi:  '',             // Europe — below (separated enough)
+  n225:  'card-right',   // Japan — right edge
+  kospi: 'card-above',   // Korea — above
+  ssec:  'card-left',    // Shanghai — left
+  twii:  'card-right',   // Taiwan — right
+  hsi:   'card-left',    // HK — left to avoid Taiwan
+  bsesn: 'card-left',    // India — left
+  axjo:  'card-left',    // Australia — left
 };
 
 async function renderWorldMap() {

@@ -121,20 +121,21 @@ def blade_history():
 # ── API: World Markets ──────────────────────────────────────────────────────
 
 WORLD_INDICES = [
-    ("spx",   "S&P 500",    "^GSPC",    22, 38),
-    ("dji",   "Dow Jones",  "^DJI",     18, 34),
-    ("ixic",  "NASDAQ",     "^IXIC",    15, 42),
-    ("ftse",  "FTSE 100",   "^FTSE",    46, 24),
-    ("gdaxi", "DAX",        "^GDAXI",   51, 23),
-    ("fchi",  "CAC 40",     "^FCHI",    48, 28),
-    ("n225",  "Nikkei 225", "^N225",    85, 33),
-    ("hsi",   "Hang Seng",  "^HSI",     78, 44),
-    ("ssec",  "Shanghai",   "000001.SS",75, 37),
-    ("kospi", "KOSPI",      "^KS11",    82, 30),
-    ("twii",  "TAIEX",      "^TWII",    80, 41),
-    ("bsesn", "Sensex",     "^BSESN",   67, 44),
-    ("axjo",  "ASX 200",    "^AXJO",    87, 70),
-    ("bvsp",  "Bovespa",    "^BVSP",    30, 65),
+    # id      name           symbol       x%   y%
+    ("spx",   "S&P 500",    "^GSPC",    23, 40),
+    ("dji",   "Dow Jones",  "^DJI",     16, 32),
+    ("ixic",  "NASDAQ",     "^IXIC",    12, 44),
+    ("ftse",  "FTSE 100",   "^FTSE",    44, 20),
+    ("gdaxi", "DAX",        "^GDAXI",   52, 18),
+    ("fchi",  "CAC 40",     "^FCHI",    46, 32),
+    ("n225",  "Nikkei 225", "^N225",    88, 30),
+    ("hsi",   "Hang Seng",  "^HSI",     76, 48),
+    ("ssec",  "Shanghai",   "000001.SS",73, 36),
+    ("kospi", "KOSPI",      "^KS11",    83, 22),
+    ("twii",  "TAIEX",      "^TWII",    82, 42),
+    ("bsesn", "Sensex",     "^BSESN",   65, 46),
+    ("axjo",  "ASX 200",    "^AXJO",    88, 72),
+    ("bvsp",  "Bovespa",    "^BVSP",    30, 66),
 ]
 
 _world_cache: dict = {"data": None, "ts": 0}
