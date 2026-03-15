@@ -227,18 +227,18 @@ async function renderSpxChart() {
 
   const chart = LightweightCharts.createChart(container, {
     width: w, height: h,
-    layout: { background: { color: '#111827' }, textColor: '#6b7280' },
+    layout: { background: { color: '#0c1a2e' }, textColor: '#5a7a9e' },
     grid: {
-      vertLines: { color: 'rgba(255,255,255,0.04)' },
-      horzLines: { color: 'rgba(255,255,255,0.04)' },
+      vertLines: { color: 'rgba(74,158,255,0.04)' },
+      horzLines: { color: 'rgba(74,158,255,0.04)' },
     },
     crosshair: {
       mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: { color: 'rgba(255,255,255,0.3)', labelBackgroundColor: '#1e2536' },
-      horzLine: { color: 'rgba(255,255,255,0.3)', labelBackgroundColor: '#1e2536' },
+      vertLine: { color: 'rgba(74,158,255,0.3)', labelBackgroundColor: '#101e36' },
+      horzLine: { color: 'rgba(74,158,255,0.3)', labelBackgroundColor: '#101e36' },
     },
-    rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)' },
-    timeScale: { borderColor: 'rgba(255,255,255,0.08)', timeVisible: true },
+    rightPriceScale: { borderColor: 'rgba(74,158,255,0.10)' },
+    timeScale: { borderColor: 'rgba(74,158,255,0.10)', timeVisible: true },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
     handleScale:  { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
   });
