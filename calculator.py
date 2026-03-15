@@ -4,13 +4,11 @@
 Compatible with yfinance >= 0.2.60 (MultiIndex columns).
 """
 
-import io
 import warnings
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-import requests
 import yfinance as yf
 
 warnings.filterwarnings("ignore")
@@ -120,41 +118,35 @@ def calc_vix():
 # ── 3. Put / Call Ratio ──────────────────────────────────────────────────────
 
 def calc_putcall():
-    """Try CBOE CSV first, fall back to VIX/realized-vol ratio."""
+    """VIX/Realized-Vol ratio with percentile rank over 252 days."""
     try:
-        url = "https://cdn.cboe.com/api/global/us_options/market_statistics/daily/daily_market_statistics.csv"
-        r = requests.get(url, timeout=10,
-                         headers={"User-Agent": "Mozilla/5.0"})
-        r.raise_for_status()
-        df = pd.read_csv(io.StringIO(r.text))
-        df.columns = [c.strip().lower() for c in df.columns]
-        pc_col = [c for c in df.columns if "p/c" in c or "put" in c.lower() and "ratio" in c.lower()]
-        if not pc_col:
-            pc_col = [c for c in df.columns if "ratio" in c]
-        if pc_col:
-            df["pc"] = pd.to_numeric(df[pc_col[0]], errors="coerce")
-            df = df.dropna(subset=["pc"]).tail(10)
-            ma5 = float(df["pc"].mean())
-            score = norm(ma5, 1.5, 0.5)
-            return score, f"P/C Ratio {ma5:.2f}（5日均）"
-    except Exception:
-        pass
-
-    # Fallback: VIX vs 20-day realized vol
-    try:
-        spy = _dl_single("SPY", 200)
-        vix_s = _dl_single("^VIX", 200)
-        if len(spy) < 30 or len(vix_s) < 30:
+        spy = _dl_single("SPY", 500)
+        vix_s = _dl_single("^VIX", 500)
+        if len(spy) < 60 or len(vix_s) < 60:
             return 50.0, "P/C 替代指標資料不足"
+
+        # Compute daily IV/RV ratio series
         log_ret = np.log(spy / spy.shift(1)).dropna()
-        rv20 = float(log_ret.tail(20).std()) * np.sqrt(252) * 100
-        iv = float(vix_s.iloc[-1])
-        ratio = iv / rv20 if rv20 > 0 else 1.0
-        # ratio > 1.5 = fear, < 0.8 = greed
-        score = norm(ratio, 1.8, 0.6)
-        return score, f"隱含/實現波動比 {ratio:.2f} (VIX {iv:.1f} / RV {rv20:.1f})"
-    except Exception:
-        return 50.0, "P/C 資料暫時不可用（中性）"
+        rv20 = log_ret.rolling(20).std() * np.sqrt(252) * 100  # annualised %
+        vix_aligned = vix_s.reindex(rv20.index, method="ffill")
+        ratio_series = (vix_aligned / rv20).replace([np.inf, -np.inf], np.nan).dropna()
+
+        if len(ratio_series) < 60:
+            return 50.0, "波動比歷史不足"
+
+        cur_ratio = float(ratio_series.iloc[-1])
+
+        # Percentile rank over available history (inverted: high ratio = fear = low score)
+        window = min(252, len(ratio_series) - 1)
+        vals = ratio_series.tail(window + 1).values
+        pct_rank = float(np.sum(vals[:-1] <= vals[-1]) / len(vals[:-1]))
+        score = round((1 - pct_rank) * 100, 1)
+
+        iv_val = float(vix_aligned.iloc[-1])
+        rv_val = float(rv20.iloc[-1])
+        return score, f"隱含/實現波動比 {cur_ratio:.2f} (VIX {iv_val:.1f} / RV {rv_val:.1f})"
+    except Exception as exc:
+        return 50.0, f"P/C 資料暫時不可用（{exc}）"
 
 
 # ── 4. Junk Bond Demand ──────────────────────────────────────────────────────
