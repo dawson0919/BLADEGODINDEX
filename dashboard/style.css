@@ -225,6 +225,11 @@ body {
   color: rgba(232,234,240,0.75);
   line-height: 1.5;
 }
+.tip-en {
+  font-size: 0.72rem;
+  color: rgba(232,234,240,0.45);
+  font-style: italic;
+}
 
 .tip-red {
   background: rgba(239,68,68,0.08);

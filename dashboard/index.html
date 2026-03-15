@@ -37,12 +37,12 @@
     <img class="logo-icon" src="assets/logo.png" alt="刀神指標 Logo" />
     <div>
       <h1 class="logo-title">刀神指標</h1>
-      <span class="logo-sub">Blade God Index &nbsp;|&nbsp; 美股市場情緒儀表板</span>
+      <span class="logo-sub">Blade God Index &nbsp;|&nbsp; 美股市場情緒儀表板 US Market Sentiment Dashboard</span>
     </div>
   </div>
   <div class="header-right">
     <span class="live-dot"></span>
-    <span class="last-update" id="lastUpdate">最後更新：–</span>
+    <span class="last-update" id="lastUpdate">最後更新 Last Update：–</span>
   </div>
 </header>
 
@@ -53,39 +53,39 @@
     <canvas id="gaugeCanvas" width="380" height="220"></canvas>
     <div class="gauge-center">
       <div class="gauge-score" id="gaugeScore">–</div>
-      <div class="gauge-label" id="gaugeLabel">載入中…</div>
+      <div class="gauge-label" id="gaugeLabel">載入中… Loading</div>
     </div>
   </div>
 
   <div class="zone-bar">
-    <div class="zone z-red"  >0–20<br/><small>極度恐慌</small></div>
-    <div class="zone z-orange">21–40<br/><small>恐懼</small></div>
-    <div class="zone z-yellow">41–60<br/><small>中性</small></div>
-    <div class="zone z-lime"  >61–80<br/><small>貪婪</small></div>
-    <div class="zone z-blue"  >81–100<br/><small>極度貪婪</small></div>
+    <div class="zone z-red"  >0–20<br/><small>極度恐慌<br/>Extreme Fear</small></div>
+    <div class="zone z-orange">21–40<br/><small>恐懼<br/>Fear</small></div>
+    <div class="zone z-yellow">41–60<br/><small>中性<br/>Neutral</small></div>
+    <div class="zone z-lime"  >61–80<br/><small>貪婪<br/>Greed</small></div>
+    <div class="zone z-blue"  >81–100<br/><small>極度貪婪<br/>Extreme Greed</small></div>
   </div>
 
   <!-- ZONE TIPS — all 5 -->
   <div class="zone-tips">
     <div class="zone-tip tip-red">
-      <span class="tip-range">0 – 20 &nbsp;🔴 極度恐慌</span>
-      <span class="tip-text">歷史上往往是逢低布局機會，市場恐慌性拋售通常已過度</span>
+      <span class="tip-range">0 – 20 &nbsp;🔴 極度恐慌 Extreme Fear</span>
+      <span class="tip-text">歷史上往往是逢低布局機會，市場恐慌性拋售通常已過度<br/><span class="tip-en">Historically a buy-the-dip opportunity — panic selling is often overdone.</span></span>
     </div>
     <div class="zone-tip tip-orange">
-      <span class="tip-range">21 – 40 &nbsp;🟠 恐懼</span>
-      <span class="tip-text">謹慎防守為主，等待趨勢走穩後再擇優布局</span>
+      <span class="tip-range">21 – 40 &nbsp;🟠 恐懼 Fear</span>
+      <span class="tip-text">謹慎防守為主，等待趨勢走穩後再擇優布局<br/><span class="tip-en">Stay defensive; wait for trend stabilization before adding positions.</span></span>
     </div>
     <div class="zone-tip tip-yellow">
-      <span class="tip-range">41 – 60 &nbsp;🟡 刀鋒區域</span>
-      <span class="tip-text">多空力量拉扯，需搭配技術面、基本面訊號再確認方向</span>
+      <span class="tip-range">41 – 60 &nbsp;🟡 刀鋒區域 Blade Zone</span>
+      <span class="tip-text">多空力量拉扯，需搭配技術面、基本面訊號再確認方向<br/><span class="tip-en">Bulls and bears in tug-of-war — confirm direction with technicals &amp; fundamentals.</span></span>
     </div>
     <div class="zone-tip tip-lime">
-      <span class="tip-range">61 – 80 &nbsp;🟢 貪婪</span>
-      <span class="tip-text">市場情緒偏多，可持倉但注意短期獲利了結風險</span>
+      <span class="tip-range">61 – 80 &nbsp;🟢 貪婪 Greed</span>
+      <span class="tip-text">市場情緒偏多，可持倉但注意短期獲利了結風險<br/><span class="tip-en">Bullish sentiment rising; hold positions but watch for short-term profit-taking.</span></span>
     </div>
     <div class="zone-tip tip-blue">
-      <span class="tip-range">81 – 100 &nbsp;🔵 極度貪婪</span>
-      <span class="tip-text">泡沫風險偏高，建議謹慎控倉、降低槓桿，注意黑天鵝</span>
+      <span class="tip-range">81 – 100 &nbsp;🔵 極度貪婪 Extreme Greed</span>
+      <span class="tip-text">泡沫風險偏高，建議謹慎控倉、降低槓桿，注意黑天鵝<br/><span class="tip-en">Bubble risk elevated — reduce exposure, lower leverage, beware black swans.</span></span>
     </div>
   </div>
 
@@ -101,7 +101,7 @@
 
 <!-- SUB INDICATORS GRID -->
 <section class="section">
-  <h2 class="section-title">⚔️ 九項子指標</h2>
+  <h2 class="section-title">⚔️ 九項子指標 <span style="font-size:0.75rem;color:var(--muted);font-weight:400">9 Sub-Indicators</span></h2>
   <div class="cards-grid" id="cardsGrid">
     <!-- Populated by JS -->
   </div>
@@ -112,14 +112,14 @@
   <h2 class="section-title" id="spxChartTitle">📊 SPX 日K 歷史走勢 <span style="font-size:0.75rem;color:var(--muted);font-weight:400">S&amp;P 500 Daily Candlestick</span></h2>
   <div class="chart-box spx-chart-box">
     <div id="spxChart"></div>
-    <div id="spxLoading" class="chart-loading">⏳ 載入 SPX K 線資料中…</div>
+    <div id="spxLoading" class="chart-loading">⏳ 載入 SPX K 線資料中… Loading SPX data...</div>
   </div>
 </section>
 
 
 <!-- FOOTER -->
 <footer class="footer">
-  <p>刀神指標為複合情緒參考工具，不構成投資建議。資料來源：Yahoo Finance · CBOE · CFTC · FINRA · CoinGecko</p>
+  <p>刀神指標為複合情緒參考工具，不構成投資建議。<br/>Blade God Index is a composite sentiment tool and does not constitute investment advice.<br/>資料來源 Data Sources：Yahoo Finance · CBOE · CFTC · FINRA · CoinGecko</p>
 </footer>
 
 <script src="app.js"></script>

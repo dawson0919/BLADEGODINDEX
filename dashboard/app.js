@@ -24,11 +24,11 @@ function scoreLabel(s) {
 }
 
 function statusBadge(s) {
-  if (s <= 20) return { text: '恐慌', bg: 'rgba(239,68,68,0.18)',   color: '#ef4444' };
-  if (s <= 40) return { text: '恐懼', bg: 'rgba(249,115,22,0.18)',  color: '#f97316' };
-  if (s <= 60) return { text: '中性', bg: 'rgba(234,179,8,0.18)',   color: '#eab308' };
-  if (s <= 80) return { text: '貪婪', bg: 'rgba(34,197,94,0.18)',   color: '#22c55e' };
-  return               { text: '狂熱', bg: 'rgba(59,130,246,0.18)', color: '#3b82f6' };
+  if (s <= 20) return { text: '恐慌 Fear',   bg: 'rgba(239,68,68,0.18)',   color: '#ef4444' };
+  if (s <= 40) return { text: '恐懼 Fear',   bg: 'rgba(249,115,22,0.18)',  color: '#f97316' };
+  if (s <= 60) return { text: '中性 Neutral', bg: 'rgba(234,179,8,0.18)',   color: '#eab308' };
+  if (s <= 80) return { text: '貪婪 Greed',   bg: 'rgba(34,197,94,0.18)',   color: '#22c55e' };
+  return               { text: '狂熱 Mania',  bg: 'rgba(59,130,246,0.18)', color: '#3b82f6' };
 }
 
 // ── MARKET COMMENTARY GENERATOR ────────────────────────────────────────────
@@ -42,15 +42,15 @@ function generateCommentary(score, indicators) {
 
   // Headline
   if (score <= 20) {
-    lines.push(`整體刀神指標處於 <strong>極度恐慌</strong> 區間（${score} 分），市場情緒已跌至歷史低位，逢低布局機會浮現，但需留意系統性風險尚未解除。`);
+    lines.push(`整體刀神指標處於 <strong>極度恐慌</strong> 區間（${score} 分），市場情緒已跌至歷史低位，逢低布局機會浮現，但需留意系統性風險尚未解除。<br/><span class="tip-en">Blade God Index is in <strong>Extreme Fear</strong> territory (${score}). Sentiment at historic lows — potential buy-the-dip opportunity, but systemic risk remains.</span>`);
   } else if (score <= 40) {
-    lines.push(`整體刀神指標顯示市場 <strong>恐懼</strong> 情緒（${score} 分），資金持續流向防禦資產，建議謹慎觀望並等待趨勢企穩訊號後再積極入場。`);
+    lines.push(`整體刀神指標顯示市場 <strong>恐懼</strong> 情緒（${score} 分），資金持續流向防禦資產，建議謹慎觀望並等待趨勢企穩訊號後再積極入場。<br/><span class="tip-en">Blade God Index signals <strong>Fear</strong> (${score}). Capital flowing to safe havens — stay defensive until trend stabilizes.</span>`);
   } else if (score <= 60) {
-    lines.push(`整體刀神指標落在 <strong>刀鋒區域</strong>（${score} 分），多空力量拉鋸，市場方向尚未明確，建議搭配技術面與基本面訊號再決策。`);
+    lines.push(`整體刀神指標落在 <strong>刀鋒區域</strong>（${score} 分），多空力量拉鋸，市場方向尚未明確，建議搭配技術面與基本面訊號再決策。<br/><span class="tip-en">Blade God Index in <strong>Blade Zone</strong> (${score}). Bulls and bears deadlocked — confirm direction with technicals & fundamentals.</span>`);
   } else if (score <= 80) {
-    lines.push(`整體刀神指標顯示市場 <strong>貪婪</strong> 情緒升溫（${score} 分），多頭動能仍在，但宜逢高適度減碼，警覺短期回調風險。`);
+    lines.push(`整體刀神指標顯示市場 <strong>貪婪</strong> 情緒升溫（${score} 分），多頭動能仍在，但宜逢高適度減碼，警覺短期回調風險。<br/><span class="tip-en">Blade God Index shows rising <strong>Greed</strong> (${score}). Bullish momentum intact, but consider trimming on rallies.</span>`);
   } else {
-    lines.push(`整體刀神指標已進入 <strong>極度貪婪</strong> 區間（${score} 分），市場估值普遍偏高、槓桿上升，黑天鵝風險不容忽視，建議大幅降低持倉暴露。`);
+    lines.push(`整體刀神指標已進入 <strong>極度貪婪</strong> 區間（${score} 分），市場估值普遍偏高、槓桿上升，黑天鵝風險不容忽視，建議大幅降低持倉暴露。<br/><span class="tip-en">Blade God Index in <strong>Extreme Greed</strong> (${score}). Valuations stretched, leverage rising — reduce exposure and beware black swans.</span>`);
   }
 
   // Sub-indicator highlights (top 2 extremes)
@@ -58,12 +58,12 @@ function generateCommentary(score, indicators) {
   const low  = (indicators || []).filter(i => i.score <= 35).sort((a, b) => a.score - b.score).slice(0, 2);
 
   if (high.length) {
-    const names = high.map(i => `${i.icon}${i.name}（${i.score}）`).join('、');
-    lines.push(`目前最強貪婪訊號來自：${names}，顯示風險偏好依然旺盛。`);
+    const names = high.map(i => `${i.icon}${i.name} ${i.nameEn}（${i.score}）`).join('、');
+    lines.push(`目前最強貪婪訊號來自：${names}，顯示風險偏好依然旺盛。<br/><span class="tip-en">Strongest greed signals from the above — risk appetite remains elevated.</span>`);
   }
   if (low.length) {
-    const names = low.map(i => `${i.icon}${i.name}（${i.score}）`).join('、');
-    lines.push(`同時需留意弱勢指標：${names}，暗示部分風險因子正在升溫。`);
+    const names = low.map(i => `${i.icon}${i.name} ${i.nameEn}（${i.score}）`).join('、');
+    lines.push(`同時需留意弱勢指標：${names}，暗示部分風險因子正在升溫。<br/><span class="tip-en">Watch the weak indicators above — some risk factors are heating up.</span>`);
   }
 
   return lines.join('<br/><br/>');
@@ -190,7 +190,7 @@ function renderCards(indicators) {
     card.innerHTML = `
       <div class="card-header">
         <span class="card-icon">${ind.icon}</span>
-        <span class="card-weight">權重 ${ind.weight}</span>
+        <span class="card-weight">權重 Weight ${ind.weight}</span>
       </div>
       <div class="card-name">${ind.name} <span class="card-name-en">${ind.nameEn}</span></div>
       <div class="card-value" style="color:${color}" id="card-val-${ind.id}">–</div>
@@ -341,7 +341,7 @@ async function init() {
     // Update timestamp
     if (data.updatedAt) {
       const dt = new Date(data.updatedAt);
-      updateEl.textContent = `最後更新：${dt.toLocaleDateString('zh-TW')} ${dt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+      updateEl.textContent = `最後更新 Updated：${dt.toLocaleDateString('zh-TW')} ${dt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     animateGauge(canvas, scoreEl, labelEl, glowEl, Math.round(score), indicators);
