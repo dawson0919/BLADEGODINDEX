@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:7788/api/blade-index)",
+      "Bash(curl -s \"http://localhost:7788/api/blade-history?days=5\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:7788/)",
+      "Bash(railway --version)",
+      "Bash(railway whoami)",
+      "Bash(railway up --detach)",
+      "Bash(railway list)",
+      "Bash(railway init --name \"blade-god-index\")",
+      "Bash(railway status)",
+      "Bash(railway logs)",
+      "Bash(railway service)",
+      "Bash(railway service blade-god-index)",
+      "Bash(railway domain)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://blade-god-index-production.up.railway.app/)",
+      "Bash(curl -s https://blade-god-index-production.up.railway.app/api/blade-index)"
+    ]
+  }
+}
