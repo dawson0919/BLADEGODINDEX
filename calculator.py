@@ -2,6 +2,10 @@
 🗡️ 刀神指標 — Calculator Engine
 9 sub-indicators, all via yfinance (free, no API key required).
 Compatible with yfinance >= 0.2.60 (MultiIndex columns).
+
+v2: Percentile-rank normalization for all indicators.
+    Scores now reach 0-20 (extreme fear) and 80-100 (extreme greed)
+    in genuine extreme market conditions.
 """
 
 import warnings
@@ -14,16 +18,18 @@ import yfinance as yf
 warnings.filterwarnings("ignore")
 
 # ── Weights (must sum to 1.0) ────────────────────────────────────────────────
+# Direct fear gauges (VIX, momentum, breadth, options) get higher weight.
+# Proxy indicators (junk, safehaven, margin, cot, crypto) get lower weight.
 WEIGHTS = {
-    "momentum":  0.15,
-    "vix":       0.15,
+    "momentum":  0.20,
+    "vix":       0.20,
     "putcall":   0.15,
-    "junk":      0.10,
-    "safehaven": 0.10,
-    "breadth":   0.10,
-    "margin":    0.10,
-    "cot":       0.10,
-    "crypto":    0.05,
+    "breadth":   0.15,
+    "junk":      0.08,
+    "safehaven": 0.08,
+    "margin":    0.05,
+    "cot":       0.05,
+    "crypto":    0.04,
 }
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,6 +45,20 @@ def norm(val: float, low: float, high: float, invert: bool = False) -> float:
     s = (val - low) / (high - low) * 100.0
     s = clamp(s)
     return round(100.0 - s if invert else s, 1)
+
+
+def _pct_rank_single(cur: float, history: np.ndarray) -> float:
+    """Percentile rank of cur within history array → 0..100."""
+    if len(history) < 20:
+        return 50.0
+    return float(np.sum(history <= cur) / len(history)) * 100.0
+
+
+def _stretch(score: float, k: float = 0.10) -> float:
+    """Sigmoid stretch that pushes scores away from 50 toward 0/100.
+    k controls steepness: higher = more extreme spread."""
+    z = (score - 50.0) * k
+    return 100.0 / (1.0 + np.exp(-z))
 
 
 def _flatten_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -92,27 +112,35 @@ def _dl_multi(symbols: list, days: int = 400) -> pd.DataFrame:
 # ── 1. Stock Market Momentum ────────────────────────────────────────────────
 
 def calc_momentum():
-    spy = _dl_single("SPY", 300)
+    spy = _dl_single("SPY", 500)
     if len(spy) < 130:
         return 50.0, "SPY 資料不足"
-    ma125 = float(spy.rolling(125).mean().iloc[-1])
+    ma125 = spy.rolling(125).mean()
+    pct_diff = ((spy - ma125) / ma125 * 100).dropna()
+    cur_pct = float(pct_diff.iloc[-1])
+    # Percentile rank over 1yr history
+    hist = pct_diff.values[:-1]
+    score = _pct_rank_single(cur_pct, hist[-252:])
+    score = _stretch(score)
     cur = float(spy.iloc[-1])
-    pct = (cur - ma125) / ma125 * 100
-    score = norm(pct, -15, 15)
-    return score, f"SPY {cur:.2f} vs MA125 {ma125:.2f} ({pct:+.1f}%)"
+    ma125_val = float(ma125.iloc[-1])
+    return round(score, 1), f"SPY {cur:.2f} vs MA125 {ma125_val:.2f} ({cur_pct:+.1f}%)"
 
 
 # ── 2. Volatility — VIX ────────────────────────────────────────────────────
 
 def calc_vix():
-    vix = _dl_single("^VIX", 200)
+    vix = _dl_single("^VIX", 500)
     if len(vix) < 55:
         return 50.0, "VIX 資料不足"
     cur = float(vix.iloc[-1])
     ma50_val = float(vix.rolling(50).mean().iloc[-1])
-    # Low VIX → greed (high score); high VIX → fear (low score)
-    score = norm(cur, 40, 10)
-    return score, f"VIX {cur:.2f}（50日均 {ma50_val:.2f}）"
+    # Inverted percentile: high VIX → high percentile → low score (fear)
+    hist = vix.values[:-1]
+    pct = _pct_rank_single(cur, hist[-252:])
+    score = 100.0 - pct  # invert: high VIX = low score
+    score = _stretch(score)
+    return round(score, 1), f"VIX {cur:.2f}（50日均 {ma50_val:.2f}）"
 
 
 # ── 3. Put / Call Ratio ──────────────────────────────────────────────────────
@@ -136,15 +164,15 @@ def calc_putcall():
 
         cur_ratio = float(ratio_series.iloc[-1])
 
-        # Percentile rank over available history (inverted: high ratio = fear = low score)
-        window = min(252, len(ratio_series) - 1)
-        vals = ratio_series.tail(window + 1).values
-        pct_rank = float(np.sum(vals[:-1] <= vals[-1]) / len(vals[:-1]))
-        score = round((1 - pct_rank) * 100, 1)
+        # Percentile rank (inverted: high ratio = fear = low score)
+        hist = ratio_series.values[:-1]
+        pct = _pct_rank_single(cur_ratio, hist[-252:])
+        score = 100.0 - pct
+        score = _stretch(score)
 
         iv_val = float(vix_aligned.iloc[-1])
         rv_val = float(rv20.iloc[-1])
-        return score, f"隱含/實現波動比 {cur_ratio:.2f} (VIX {iv_val:.1f} / RV {rv_val:.1f})"
+        return round(score, 1), f"隱含/實現波動比 {cur_ratio:.2f} (VIX {iv_val:.1f} / RV {rv_val:.1f})"
     except Exception as exc:
         return 50.0, f"P/C 資料暫時不可用（{exc}）"
 
@@ -152,29 +180,33 @@ def calc_putcall():
 # ── 4. Junk Bond Demand ──────────────────────────────────────────────────────
 
 def calc_junk():
-    df = _dl_multi(["HYG", "LQD"], 90)
+    df = _dl_multi(["HYG", "LQD"], 500)
     if df.shape[0] < 35 or "HYG" not in df.columns or "LQD" not in df.columns:
         return 50.0, "HYG/LQD 資料不足"
-    r30 = df.pct_change(30).iloc[-1]
-    hyg_r = float(r30["HYG"])
-    lqd_r = float(r30["LQD"])
-    diff = (hyg_r - lqd_r) * 100
-    score = norm(diff, -5, 5)
-    return score, f"HYG-LQD 30日報酬差：{diff:+.2f}%"
+    spread = (df["HYG"].pct_change(30) - df["LQD"].pct_change(30)).dropna() * 100
+    if len(spread) < 30:
+        return 50.0, "HYG/LQD 歷史不足"
+    cur = float(spread.iloc[-1])
+    hist = spread.values[:-1]
+    score = _pct_rank_single(cur, hist[-252:])
+    score = _stretch(score)
+    return round(score, 1), f"HYG-LQD 30日報酬差：{cur:+.2f}%"
 
 
 # ── 5. Safe Haven Demand ─────────────────────────────────────────────────────
 
 def calc_safehaven():
-    df = _dl_multi(["SPY", "TLT"], 60)
+    df = _dl_multi(["SPY", "TLT"], 500)
     if df.shape[0] < 25 or "SPY" not in df.columns or "TLT" not in df.columns:
         return 50.0, "SPY/TLT 資料不足"
-    r20 = df.pct_change(20).iloc[-1]
-    spy_r = float(r20["SPY"])
-    tlt_r = float(r20["TLT"])
-    diff = (spy_r - tlt_r) * 100
-    score = norm(diff, -10, 10)
-    return score, f"SPY-TLT 20日報酬差：{diff:+.2f}%"
+    spread = (df["SPY"].pct_change(20) - df["TLT"].pct_change(20)).dropna() * 100
+    if len(spread) < 30:
+        return 50.0, "SPY/TLT 歷史不足"
+    cur = float(spread.iloc[-1])
+    hist = spread.values[:-1]
+    score = _pct_rank_single(cur, hist[-252:])
+    score = _stretch(score)
+    return round(score, 1), f"SPY-TLT 20日報酬差：{cur:+.2f}%"
 
 
 # ── 6. Market Breadth (sector ETFs above 50-day MA) ──────────────────────────
@@ -192,69 +224,78 @@ def calc_breadth():
     total = len([c for c in df.columns if c in SECTOR_ETFS])
     if total == 0:
         return 50.0, "行業 ETF 資料不足"
-    score = round(above / total * 100, 1)
-    return score, f"{above}/{total} 行業 ETF 高於 MA50"
+    # Breadth is already 0-100, apply stretch to push extremes
+    raw_score = above / total * 100
+    score = _stretch(raw_score)
+    return round(score, 1), f"{above}/{total} 行業 ETF 高於 MA50"
 
 
 # ── 7. Leverage proxy (RSP vs SPY equal-weight spread) ───────────────────────
 
 def calc_margin():
-    df = _dl_multi(["RSP", "SPY"], 130)
+    df = _dl_multi(["RSP", "SPY"], 500)
     if df.shape[0] < 65 or "RSP" not in df.columns or "SPY" not in df.columns:
         return 50.0, "RSP/SPY 資料不足"
     ratio = (df["RSP"] / df["SPY"]).dropna()
     ma60 = ratio.rolling(60).mean()
-    cur = float(ratio.iloc[-1])
-    avg = float(ma60.iloc[-1])
-    pct = (cur - avg) / avg * 100
-    score = norm(pct, -5, 5)
-    return score, f"RSP/SPY 離均差：{pct:+.2f}%"
+    deviation = ((ratio - ma60) / ma60 * 100).dropna()
+    if len(deviation) < 30:
+        return 50.0, "RSP/SPY 歷史不足"
+    cur = float(deviation.iloc[-1])
+    hist = deviation.values[:-1]
+    score = _pct_rank_single(cur, hist[-252:])
+    score = _stretch(score)
+    return round(score, 1), f"RSP/SPY 離均差：{cur:+.2f}%"
 
 
 # ── 8. Smart Money / COT proxy (SPY vs GLD) ─────────────────────────────────
 
 def calc_cot():
-    df = _dl_multi(["GLD", "SPY"], 90)
+    df = _dl_multi(["GLD", "SPY"], 500)
     if df.shape[0] < 25 or "GLD" not in df.columns or "SPY" not in df.columns:
         return 50.0, "GLD/SPY 資料不足"
-    r20 = df.pct_change(20).iloc[-1]
-    spy_r = float(r20["SPY"])
-    gld_r = float(r20["GLD"])
-    diff = (spy_r - gld_r) * 100
-    score = norm(diff, -10, 10)
-    return score, f"SPY-GLD 20日報酬差：{diff:+.2f}%"
+    spread = (df["SPY"].pct_change(20) - df["GLD"].pct_change(20)).dropna() * 100
+    if len(spread) < 30:
+        return 50.0, "GLD/SPY 歷史不足"
+    cur = float(spread.iloc[-1])
+    hist = spread.values[:-1]
+    score = _pct_rank_single(cur, hist[-252:])
+    score = _stretch(score)
+    return round(score, 1), f"SPY-GLD 20日報酬差：{cur:+.2f}%"
 
 
 # ── 9. Crypto Contagion (BTC 30-day z-score) ────────────────────────────────
 
 def calc_crypto():
-    btc = _dl_single("BTC-USD", 450)
+    btc = _dl_single("BTC-USD", 500)
     if len(btc) < 100:
         return 50.0, "BTC 資料不足"
     ret30 = btc.pct_change(30).dropna()
     if len(ret30) < 60:
         return 50.0, "BTC 歷史不足"
-    window = min(252, len(ret30) - 1)
-    mu = float(ret30.rolling(window).mean().iloc[-1])
-    sigma = float(ret30.rolling(window).std().iloc[-1])
-    r = float(ret30.iloc[-1])
-    z = (r - mu) / sigma if sigma > 0 else 0.0
-    score = norm(z, -2.5, 2.5)
-    return score, f"BTC 30日 z-score：{z:+.2f}σ"
+    cur = float(ret30.iloc[-1])
+    hist = ret30.values[:-1]
+    score = _pct_rank_single(cur, hist[-252:])
+    score = _stretch(score)
+    z_window = min(252, len(ret30) - 1)
+    mu = float(ret30.rolling(z_window).mean().iloc[-1])
+    sigma = float(ret30.rolling(z_window).std().iloc[-1])
+    z = (cur - mu) / sigma if sigma > 0 else 0.0
+    return round(score, 1), f"BTC 30日 z-score：{z:+.2f}σ"
 
 
 # ── Indicator registry ───────────────────────────────────────────────────────
 
 INDICATORS = [
-    ("momentum",  calc_momentum,  "📊", "股市動能",       "Market Momentum",   "15%"),
-    ("vix",       calc_vix,       "⚡", "VIX 恐慌指數",   "Volatility (VIX)",  "15%"),
+    ("momentum",  calc_momentum,  "📊", "股市動能",       "Market Momentum",   "20%"),
+    ("vix",       calc_vix,       "⚡", "VIX 恐慌指數",   "Volatility (VIX)",  "20%"),
     ("putcall",   calc_putcall,   "🎲", "Put/Call 比率",  "Options Sentiment", "15%"),
-    ("junk",      calc_junk,      "💸", "垃圾債需求",     "Junk Bond Demand",  "10%"),
-    ("safehaven", calc_safehaven, "🏦", "安全資產需求",   "Safe Haven Demand", "10%"),
-    ("breadth",   calc_breadth,   "📐", "市場廣度",       "Market Breadth",    "10%"),
-    ("margin",    calc_margin,    "⚖️", "融資槓桿",       "Leverage Proxy",    "10%"),
-    ("cot",       calc_cot,       "🏛️", "機構籌碼 (COT)", "Smart Money / COT", "10%"),
-    ("crypto",    calc_crypto,    "₿",  "加密溢出",       "Crypto Contagion",  "5%"),
+    ("breadth",   calc_breadth,   "📐", "市場廣度",       "Market Breadth",    "15%"),
+    ("junk",      calc_junk,      "💸", "垃圾債需求",     "Junk Bond Demand",  "8%"),
+    ("safehaven", calc_safehaven, "🏦", "安全資產需求",   "Safe Haven Demand", "8%"),
+    ("margin",    calc_margin,    "⚖️", "融資槓桿",       "Leverage Proxy",    "5%"),
+    ("cot",       calc_cot,       "🏛️", "機構籌碼 (COT)", "Smart Money / COT", "5%"),
+    ("crypto",    calc_crypto,    "₿",  "加密溢出",       "Crypto Contagion",  "4%"),
 ]
 
 
@@ -275,9 +316,15 @@ SOURCES = {
 # ── Main compute function ────────────────────────────────────────────────────
 
 def compute() -> dict:
-    """Calculate all 9 indicators and return composite Blade God Index score."""
+    """Calculate all 9 indicators and return composite Blade God Index score.
+
+    Uses consensus adjustment: when 5+ indicators agree on extreme fear (<25)
+    or extreme greed (>75), the composite is pulled further in that direction.
+    This prevents a few noisy outliers from masking a clear market regime.
+    """
     results = []
     weighted_sum = 0.0
+    all_scores = []
 
     for key, fn, icon, name, name_en, weight_str in INDICATORS:
         weight = WEIGHTS[key]
@@ -297,8 +344,27 @@ def compute() -> dict:
             "source":   SOURCES.get(key, "Yahoo Finance"),
         })
         weighted_sum += score * weight
+        all_scores.append(score)
 
-    total = round(weighted_sum, 1)
+    raw_total = weighted_sum
+
+    # ── Consensus adjustment ──────────────────────────────────────────────
+    # When majority of indicators agree on fear/greed, adjust composite
+    fear_count = sum(1 for s in all_scores if s < 25)
+    greed_count = sum(1 for s in all_scores if s > 75)
+    median_score = float(np.median(all_scores))
+
+    if fear_count >= 5:
+        # Strong fear consensus: blend toward median (which will be low)
+        blend = 0.3 * (fear_count - 4) / 5  # 0.06 per extra fearful indicator
+        blend = min(blend, 0.5)
+        raw_total = raw_total * (1 - blend) + median_score * blend
+    elif greed_count >= 5:
+        blend = 0.3 * (greed_count - 4) / 5
+        blend = min(blend, 0.5)
+        raw_total = raw_total * (1 - blend) + median_score * blend
+
+    total = round(clamp(raw_total), 1)
     return {
         "score":      total,
         "indicators": results,
